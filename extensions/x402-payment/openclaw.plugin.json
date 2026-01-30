@@ -1,0 +1,50 @@
+{
+  "id": "x402-payment",
+  "name": "x402 Payment",
+  "description": "x402 payment protocol integration for AI agent monetization via USDC on Base network",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "enabled": {
+        "type": "boolean",
+        "description": "Enable x402 payment requirements for AI responses",
+        "default": false
+      },
+      "network": {
+        "type": "string",
+        "description": "CAIP-2 network identifier (e.g., eip155:8453 for Base Mainnet, eip155:84532 for Base Sepolia)",
+        "default": "eip155:84532"
+      },
+      "payTo": {
+        "type": "string",
+        "description": "Wallet address to receive payments (0x...)"
+      },
+      "pricePerMessage": {
+        "type": "string",
+        "description": "USDC price per AI response (e.g., $0.01)",
+        "default": "$0.01"
+      },
+      "facilitatorUrl": {
+        "type": "string",
+        "description": "x402 facilitator URL for payment verification",
+        "default": "https://x402.org/facilitator"
+      },
+      "privateKey": {
+        "type": "string",
+        "description": "Private key for signing payment requests (for testing only, use env var in production)"
+      },
+      "freeMessagesPerSession": {
+        "type": "integer",
+        "description": "Number of free messages before requiring payment",
+        "default": 3
+      },
+      "telegramPaymentBotUrl": {
+        "type": "string",
+        "description": "URL for Telegram payment webapp/bot",
+        "default": "https://openclaw.ai/pay"
+      }
+    },
+    "required": ["payTo"]
+  }
+}

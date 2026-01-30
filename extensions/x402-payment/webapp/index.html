@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenClaw x402 Payment</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--tg-theme-bg-color, #1a1a2e);
+      color: var(--tg-theme-text-color, #ffffff);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .logo {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--tg-theme-hint-color, #888);
+      margin-bottom: 32px;
+    }
+
+    .amount-card {
+      background: var(--tg-theme-secondary-bg-color, #16213e);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .amount {
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--tg-theme-button-color, #0088cc);
+    }
+
+    .currency {
+      font-size: 18px;
+      color: var(--tg-theme-hint-color, #888);
+    }
+
+    .network-badge {
+      display: inline-block;
+      background: rgba(0, 136, 204, 0.2);
+      color: var(--tg-theme-button-color, #0088cc);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      margin-top: 12px;
+    }
+
+    .details {
+      text-align: left;
+      background: var(--tg-theme-secondary-bg-color, #16213e);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+
+    .detail-label {
+      color: var(--tg-theme-hint-color, #888);
+    }
+
+    .detail-value {
+      font-family: monospace;
+      font-size: 12px;
+      word-break: break-all;
+      text-align: right;
+      max-width: 200px;
+    }
+
+    .connect-btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--tg-theme-button-color, #0088cc);
+      color: var(--tg-theme-button-text-color, #ffffff);
+      transition: opacity 0.2s;
+    }
+
+    .connect-btn:hover {
+      opacity: 0.9;
+    }
+
+    .connect-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .status.success {
+      background: rgba(0, 200, 83, 0.2);
+      color: #00c853;
+    }
+
+    .status.error {
+      background: rgba(255, 82, 82, 0.2);
+      color: #ff5252;
+    }
+
+    .status.pending {
+      background: rgba(255, 193, 7, 0.2);
+      color: #ffc107;
+    }
+
+    .footer {
+      margin-top: auto;
+      padding-top: 24px;
+      text-align: center;
+      color: var(--tg-theme-hint-color, #888);
+      font-size: 12px;
+    }
+
+    .footer a {
+      color: var(--tg-theme-link-color, #0088cc);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">&#x1F916;</div>
+    <h1>OpenClaw AI Payment</h1>
+    <p class="subtitle">Pay to continue your AI conversation</p>
+
+    <div class="amount-card">
+      <div class="amount" id="amount">$0.01</div>
+      <div class="currency">USDC</div>
+      <div class="network-badge" id="network">Base Network</div>
+    </div>
+
+    <div class="details">
+      <div class="detail-row">
+        <span class="detail-label">Pay to</span>
+        <span class="detail-value" id="payTo">0x...</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Session</span>
+        <span class="detail-value" id="session">-</span>
+      </div>
+    </div>
+
+    <button class="connect-btn" id="connectBtn" onclick="handlePayment()">
+      Connect Wallet & Pay
+    </button>
+
+    <div class="status" id="status" style="display: none;"></div>
+
+    <div class="footer">
+      Powered by <a href="https://x402.org" target="_blank">x402</a> &bull;
+      <a href="https://openclaw.ai" target="_blank">OpenClaw</a>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Telegram WebApp
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    // Parse URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const paymentData = {
+      session: params.get('session') || 'unknown',
+      amount: params.get('amount') || '$0.01',
+      network: params.get('network') || 'eip155:8453',
+      payTo: params.get('payTo') || '',
+      msg: params.get('msg') || ''
+    };
+
+    // Update UI with payment details
+    document.getElementById('amount').textContent = paymentData.amount;
+    document.getElementById('payTo').textContent = paymentData.payTo
+      ? `${paymentData.payTo.slice(0, 8)}...${paymentData.payTo.slice(-6)}`
+      : 'Not specified';
+    document.getElementById('session').textContent = paymentData.session.slice(0, 20) + '...';
+
+    // Network display names
+    const networkNames = {
+      'eip155:8453': 'Base Mainnet',
+      'eip155:84532': 'Base Sepolia (Testnet)'
+    };
+    document.getElementById('network').textContent = networkNames[paymentData.network] || paymentData.network;
+
+    function showStatus(message, type) {
+      const status = document.getElementById('status');
+      status.textContent = message;
+      status.className = `status ${type}`;
+      status.style.display = 'block';
+    }
+
+    async function handlePayment() {
+      const btn = document.getElementById('connectBtn');
+      btn.disabled = true;
+      btn.textContent = 'Connecting...';
+
+      try {
+        // Check if wallet is available
+        if (!window.ethereum) {
+          showStatus('No wallet detected. Please install MetaMask or use Coinbase Wallet.', 'error');
+          btn.disabled = false;
+          btn.textContent = 'Connect Wallet & Pay';
+          return;
+        }
+
+        showStatus('Connecting to wallet...', 'pending');
+
+        // Request account access
+        const accounts = await window.ethereum.request({
+          method: 'eth_requestAccounts'
+        });
+
+        if (!accounts || accounts.length === 0) {
+          throw new Error('No accounts found');
+        }
+
+        const userAddress = accounts[0];
+        showStatus(`Connected: ${userAddress.slice(0, 8)}...`, 'pending');
+        btn.textContent = 'Processing Payment...';
+
+        // Parse amount to USDC (6 decimals)
+        const amountStr = paymentData.amount.replace('$', '');
+        const amountUsdc = Math.round(parseFloat(amountStr) * 1000000);
+
+        // USDC contract address on Base
+        const usdcAddress = paymentData.network === 'eip155:84532'
+          ? '0x036CbD53842c5426634e7929541eC2318f3dCF7e' // Base Sepolia USDC
+          : '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // Base Mainnet USDC
+
+        // Check network
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        const expectedChainId = paymentData.network === 'eip155:84532' ? '0x14a34' : '0x2105';
+
+        if (chainId !== expectedChainId) {
+          showStatus('Please switch to Base network in your wallet', 'error');
+
+          // Try to switch network
+          try {
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: expectedChainId }]
+            });
+          } catch (switchError) {
+            // Network not added, try to add it
+            if (switchError.code === 4902) {
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: expectedChainId,
+                  chainName: paymentData.network === 'eip155:84532' ? 'Base Sepolia' : 'Base',
+                  nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                  rpcUrls: [paymentData.network === 'eip155:84532'
+                    ? 'https://sepolia.base.org'
+                    : 'https://mainnet.base.org'],
+                  blockExplorerUrls: [paymentData.network === 'eip155:84532'
+                    ? 'https://sepolia.basescan.org'
+                    : 'https://basescan.org']
+                }]
+              });
+            }
+          }
+
+          btn.disabled = false;
+          btn.textContent = 'Connect Wallet & Pay';
+          return;
+        }
+
+        // Prepare transfer transaction
+        // ERC20 transfer function signature: transfer(address,uint256)
+        const transferData =
+          '0xa9059cbb' + // transfer function selector
+          paymentData.payTo.slice(2).padStart(64, '0') + // to address
+          amountUsdc.toString(16).padStart(64, '0'); // amount
+
+        showStatus('Please confirm the transaction in your wallet...', 'pending');
+
+        // Send transaction
+        const txHash = await window.ethereum.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: userAddress,
+            to: usdcAddress,
+            data: transferData,
+            gas: '0x15F90' // 90000 gas
+          }]
+        });
+
+        showStatus(`Transaction sent! Hash: ${txHash.slice(0, 16)}...`, 'success');
+        btn.textContent = 'Payment Complete!';
+
+        // Report back to OpenClaw
+        const callbackUrl = `${window.location.origin}/x402/callback`;
+        try {
+          await fetch(callbackUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              paymentId: paymentData.msg,
+              txHash,
+              payer: userAddress,
+              network: paymentData.network
+            })
+          });
+        } catch (e) {
+          console.log('Callback failed, but payment succeeded');
+        }
+
+        // Close Telegram webapp after success
+        if (tg) {
+          setTimeout(() => {
+            tg.close();
+          }, 2000);
+        }
+
+      } catch (error) {
+        console.error('Payment error:', error);
+        showStatus(error.message || 'Payment failed. Please try again.', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Connect Wallet & Pay';
+      }
+    }
+  </script>
+</body>
+</html>
