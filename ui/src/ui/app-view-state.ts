@@ -29,6 +29,9 @@ import type {
 import type { DevicePairingList } from "./controllers/devices";
 import type { ExecApprovalRequest } from "./controllers/exec-approval";
 import type { NostrProfileFormState } from "./views/channels.nostr-profile-form";
+import type { WizardStep } from "./views/setup";
+import type { Server, ServerRegion, ServerType } from "./views/servers";
+import type { BillingStatus, BillingUsage } from "./views/billing";
 
 export type AppViewState = {
   settings: UiSettings;
@@ -146,6 +149,29 @@ export type AppViewState = {
   logsLevelFilters: Record<LogLevel, boolean>;
   logsAutoFollow: boolean;
   logsTruncated: boolean;
+  // Setup (Wizard) state
+  setupLoading: boolean;
+  setupWizardSessionId: string | null;
+  setupWizardStatus: "idle" | "running" | "done" | "cancelled" | "error";
+  setupCurrentStep: WizardStep | null;
+  setupStepProgress: number | null;
+  setupError: string | null;
+  // Servers state
+  serversLoading: boolean;
+  serversDeploying: boolean;
+  serversList: Server[];
+  serversRegions: ServerRegion[];
+  serversTypes: ServerType[];
+  serversError: string | null;
+  serversSelectedRegion: string;
+  serversSelectedType: string;
+  // Billing state
+  billingLoading: boolean;
+  billingStatus: BillingStatus | null;
+  billingUsage: BillingUsage | null;
+  billingApiMode: "x402" | "apiKey";
+  billingApiKeyConfigured: boolean;
+  billingError: string | null;
   client: GatewayBrowserClient | null;
   connect: () => void;
   setTab: (tab: Tab) => void;
@@ -206,4 +232,20 @@ export type AppViewState = {
   handleLogsLevelFilterToggle: (level: LogLevel) => void;
   handleLogsAutoFollowToggle: (next: boolean) => void;
   handleCallDebugMethod: (method: string, params: string) => Promise<void>;
+  // Setup handlers
+  handleSetupStart: (mode?: "local" | "remote") => Promise<void>;
+  handleSetupNext: (stepId: string, value: unknown) => Promise<void>;
+  handleSetupCancel: () => Promise<void>;
+  handleSetupRefresh: () => Promise<void>;
+  // Servers handlers
+  handleServersLoad: () => Promise<void>;
+  handleServersDeploy: (region: string, serverType: string) => Promise<void>;
+  handleServersDelete: (serverId: number) => Promise<void>;
+  handleServersConnect: (serverUrl: string) => void;
+  handleServersRegionChange: (region: string) => void;
+  handleServersTypeChange: (type: string) => void;
+  // Billing handlers
+  handleBillingLoad: () => Promise<void>;
+  handleBillingModeChange: (mode: "x402" | "apiKey") => Promise<void>;
+  handleBillingShutdown: () => Promise<void>;
 };

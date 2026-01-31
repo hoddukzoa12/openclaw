@@ -8,6 +8,7 @@ export const TAB_GROUPS = [
   },
   { label: "Agent", tabs: ["skills", "nodes"] },
   { label: "Settings", tabs: ["config", "debug", "logs"] },
+  { label: "Vessel", tabs: ["setup", "servers", "billing"] },
 ] as const;
 
 export type Tab =
@@ -21,7 +22,10 @@ export type Tab =
   | "chat"
   | "config"
   | "debug"
-  | "logs";
+  | "logs"
+  | "setup"
+  | "servers"
+  | "billing";
 
 const TAB_PATHS: Record<Tab, string> = {
   overview: "/overview",
@@ -35,6 +39,9 @@ const TAB_PATHS: Record<Tab, string> = {
   config: "/config",
   debug: "/debug",
   logs: "/logs",
+  setup: "/setup",
+  servers: "/servers",
+  billing: "/billing",
 };
 
 const PATH_TO_TAB = new Map(
@@ -124,6 +131,12 @@ export function iconForTab(tab: Tab): IconName {
       return "bug";
     case "logs":
       return "scrollText";
+    case "setup":
+      return "wand";
+    case "servers":
+      return "server";
+    case "billing":
+      return "creditCard";
     default:
       return "folder";
   }
@@ -153,6 +166,12 @@ export function titleForTab(tab: Tab) {
       return "Debug";
     case "logs":
       return "Logs";
+    case "setup":
+      return "Setup";
+    case "servers":
+      return "Servers";
+    case "billing":
+      return "Billing";
     default:
       return "Control";
   }
@@ -182,6 +201,12 @@ export function subtitleForTab(tab: Tab) {
       return "Gateway snapshots, events, and manual RPC calls.";
     case "logs":
       return "Live tail of the gateway file logs.";
+    case "setup":
+      return "Guided setup wizard for authentication and channels.";
+    case "servers":
+      return "Deploy and manage cloud server instances.";
+    case "billing":
+      return "x402 payment status, usage, and API mode.";
     default:
       return "";
   }

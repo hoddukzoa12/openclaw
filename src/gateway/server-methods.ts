@@ -25,6 +25,8 @@ import { usageHandlers } from "./server-methods/usage.js";
 import { voicewakeHandlers } from "./server-methods/voicewake.js";
 import { webHandlers } from "./server-methods/web.js";
 import { wizardHandlers } from "./server-methods/wizard.js";
+import { serversHandlers } from "./server-methods/servers.js";
+import { billingHandlers } from "./server-methods/billing.js";
 
 const ADMIN_SCOPE = "operator.admin";
 const READ_SCOPE = "operator.read";
@@ -128,6 +130,8 @@ function authorizeGatewayMethod(method: string, client: GatewayRequestOptions["c
     method.startsWith("config.") ||
     method.startsWith("wizard.") ||
     method.startsWith("update.") ||
+    method.startsWith("servers.") ||
+    method.startsWith("billing.") ||
     method === "channels.logout" ||
     method === "skills.install" ||
     method === "skills.update" ||
@@ -171,6 +175,8 @@ export const coreGatewayHandlers: GatewayRequestHandlers = {
   ...agentHandlers,
   ...agentsHandlers,
   ...browserHandlers,
+  ...serversHandlers,
+  ...billingHandlers,
 };
 
 export async function handleGatewayRequest(

@@ -82,6 +82,16 @@ const BASE_METHODS = [
   "chat.history",
   "chat.abort",
   "chat.send",
+  // Vessel server management
+  "servers.list",
+  "servers.create",
+  "servers.delete",
+  "servers.status",
+  // Vessel billing
+  "billing.status",
+  "billing.usage",
+  "billing.setMode",
+  "billing.shutdown",
 ];
 
 export function listGatewayMethods(): string[] {

@@ -33,6 +33,29 @@ import type {
 } from "./controllers/exec-approvals";
 import type { DevicePairingList } from "./controllers/devices";
 import type { ExecApprovalRequest } from "./controllers/exec-approval";
+import type { SkillMessage } from "./controllers/skills";
+import type { WizardStep } from "./views/setup";
+import type { Server, ServerRegion, ServerType } from "./views/servers";
+import type { BillingStatus, BillingUsage } from "./views/billing";
+import {
+  startSetupWizard,
+  nextSetupStep,
+  cancelSetupWizard,
+  getSetupWizardStatus,
+} from "./controllers/setup";
+import {
+  loadServers,
+  deployServer,
+  deleteServer,
+  connectToServer,
+  setSelectedRegion,
+  setSelectedType,
+} from "./controllers/servers";
+import {
+  loadBilling,
+  setBillingMode,
+  shutdownInstance,
+} from "./controllers/billing";
 import {
   resetToolStream as resetToolStreamInternal,
   type ToolStreamEntry,
@@ -246,6 +269,32 @@ export class OpenClawApp extends LitElement {
   @state() logsLimit = 500;
   @state() logsMaxBytes = 250_000;
   @state() logsAtBottom = true;
+
+  // Setup (Wizard) state
+  @state() setupLoading = false;
+  @state() setupWizardSessionId: string | null = null;
+  @state() setupWizardStatus: "idle" | "running" | "done" | "cancelled" | "error" = "idle";
+  @state() setupCurrentStep: WizardStep | null = null;
+  @state() setupStepProgress: number | null = null;
+  @state() setupError: string | null = null;
+
+  // Servers state
+  @state() serversLoading = false;
+  @state() serversDeploying = false;
+  @state() serversList: Server[] = [];
+  @state() serversRegions: ServerRegion[] = [];
+  @state() serversTypes: ServerType[] = [];
+  @state() serversError: string | null = null;
+  @state() serversSelectedRegion = "";
+  @state() serversSelectedType = "";
+
+  // Billing state
+  @state() billingLoading = false;
+  @state() billingStatus: BillingStatus | null = null;
+  @state() billingUsage: BillingUsage | null = null;
+  @state() billingApiMode: "x402" | "apiKey" = "x402";
+  @state() billingApiKeyConfigured = false;
+  @state() billingError: string | null = null;
 
   client: GatewayBrowserClient | null = null;
   private chatScrollFrame: number | null = null;
@@ -494,6 +543,61 @@ export class OpenClawApp extends LitElement {
     const newRatio = Math.max(0.4, Math.min(0.7, ratio));
     this.splitRatio = newRatio;
     this.applySettings({ ...this.settings, splitRatio: newRatio });
+  }
+
+  // Setup (Wizard) handlers
+  async handleSetupStart(mode?: "local" | "remote") {
+    await startSetupWizard(this, mode);
+  }
+
+  async handleSetupNext(stepId: string, value: unknown) {
+    await nextSetupStep(this, stepId, value);
+  }
+
+  async handleSetupCancel() {
+    await cancelSetupWizard(this);
+  }
+
+  async handleSetupRefresh() {
+    await getSetupWizardStatus(this);
+  }
+
+  // Servers handlers
+  async handleServersLoad() {
+    await loadServers(this);
+  }
+
+  async handleServersDeploy(region: string, serverType: string) {
+    await deployServer(this, region, serverType);
+  }
+
+  async handleServersDelete(serverId: number) {
+    await deleteServer(this, serverId);
+  }
+
+  handleServersConnect(serverUrl: string) {
+    connectToServer(serverUrl);
+  }
+
+  handleServersRegionChange(region: string) {
+    setSelectedRegion(this, region);
+  }
+
+  handleServersTypeChange(type: string) {
+    setSelectedType(this, type);
+  }
+
+  // Billing handlers
+  async handleBillingLoad() {
+    await loadBilling(this);
+  }
+
+  async handleBillingModeChange(mode: "x402" | "apiKey") {
+    await setBillingMode(this, mode);
+  }
+
+  async handleBillingShutdown() {
+    await shutdownInstance(this);
   }
 
   render() {

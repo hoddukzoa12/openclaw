@@ -51,6 +51,9 @@ import {
   rotateDeviceToken,
 } from "./controllers/devices";
 import { renderSkills } from "./views/skills";
+import { renderSetup } from "./views/setup";
+import { renderServers } from "./views/servers";
+import { renderBilling } from "./views/billing";
 import { renderChatControls, renderTab, renderThemeToggle } from "./app-render.helpers";
 import { loadChannels } from "./controllers/channels";
 import { loadPresence } from "./controllers/presence";
@@ -575,6 +578,57 @@ export function renderApp(state: AppViewState) {
               onRefresh: () => loadLogs(state, { reset: true }),
               onExport: (lines, label) => state.exportLogs(lines, label),
               onScroll: (event) => state.handleLogsScroll(event),
+            })
+          : nothing}
+
+        ${state.tab === "setup"
+          ? renderSetup({
+              connected: state.connected,
+              loading: state.setupLoading,
+              wizardSessionId: state.setupWizardSessionId,
+              wizardStatus: state.setupWizardStatus,
+              currentStep: state.setupCurrentStep,
+              stepProgress: state.setupStepProgress,
+              error: state.setupError,
+              onStart: (mode) => state.handleSetupStart(mode),
+              onNext: (stepId, value) => state.handleSetupNext(stepId, value),
+              onCancel: () => state.handleSetupCancel(),
+              onRefresh: () => state.handleSetupRefresh(),
+            })
+          : nothing}
+
+        ${state.tab === "servers"
+          ? renderServers({
+              connected: state.connected,
+              loading: state.serversLoading,
+              deploying: state.serversDeploying,
+              servers: state.serversList,
+              regions: state.serversRegions,
+              serverTypes: state.serversTypes,
+              error: state.serversError,
+              selectedRegion: state.serversSelectedRegion,
+              selectedType: state.serversSelectedType,
+              onRefresh: () => state.handleServersLoad(),
+              onDeploy: (region, type) => state.handleServersDeploy(region, type),
+              onDelete: (serverId) => state.handleServersDelete(serverId),
+              onConnect: (url) => state.handleServersConnect(url),
+              onRegionChange: (region) => state.handleServersRegionChange(region),
+              onTypeChange: (type) => state.handleServersTypeChange(type),
+            })
+          : nothing}
+
+        ${state.tab === "billing"
+          ? renderBilling({
+              connected: state.connected,
+              loading: state.billingLoading,
+              status: state.billingStatus,
+              usage: state.billingUsage,
+              apiMode: state.billingApiMode,
+              apiKeyConfigured: state.billingApiKeyConfigured,
+              error: state.billingError,
+              onRefresh: () => state.handleBillingLoad(),
+              onSwitchMode: (mode) => state.handleBillingModeChange(mode),
+              onShutdown: () => state.handleBillingShutdown(),
             })
           : nothing}
       </main>
