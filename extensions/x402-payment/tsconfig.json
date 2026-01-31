@@ -7,8 +7,10 @@
     "module": "ESNext",
     "target": "ES2022",
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "strict": false,
+    "noImplicitAny": false
   },
-  "include": ["index.ts", "src/**/*.ts"],
+  "include": ["index.ts", "src/**/*.ts", "test/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

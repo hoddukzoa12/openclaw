@@ -1,12 +1,22 @@
 {
   "name": "@openclaw/x402-payment",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
-  "description": "x402 payment protocol integration for OpenClaw - enables USDC payments for AI agent interactions",
+  "description": "x402 payment protocol integration for OpenClaw with Permit2 auto-payments",
   "openclaw": {
     "extensions": [
       "./index.ts"
     ]
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./permit2": "./src/permit2/index.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "telegram": "bun run test-telegram.ts"
   },
   "dependencies": {
     "@x402/core": "^2.0.0",
@@ -15,9 +25,19 @@
     "viem": "^2.0.0"
   },
   "devDependencies": {
-    "openclaw": "workspace:*"
+    "openclaw": "workspace:*",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
   },
   "peerDependencies": {
     "openclaw": "*"
-  }
+  },
+  "keywords": [
+    "openclaw",
+    "x402",
+    "permit2",
+    "usdc",
+    "payments",
+    "ai-agents"
+  ]
 }

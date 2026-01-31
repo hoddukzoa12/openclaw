@@ -1,38 +1,42 @@
 # x402 Payment Plugin for OpenClaw
 
-Enable USDC payments for AI agent interactions using the [x402 protocol](https://x402.org).
+x402 payment protocol integration for OpenClaw with Permit2 auto-payments.
 
-## Overview
+## Features
 
-This plugin integrates the x402 payment protocol with OpenClaw, allowing you to monetize AI agent responses via instant, low-fee USDC payments on the Base network.
+### Core Payment
+- **Pay-per-message**: Charge USDC for AI responses
+- **Free trial messages**: Configurable free tier
+- **Telegram integration**: Native payment flow
+- **On-chain verification**: Real USDC transaction validation
+- **Double-spend protection**: Transaction hash tracking
 
-### Features
+### Permit2 Integration
+- **Gasless payments**: One-time approval, then signature-only
+- **Auto-billing**: Usage-based automatic charging
+- **Spending limits**: User-controlled allowances
 
-- **Pay-per-message**: Charge users USDC for AI responses
-- **Free trial messages**: Configurable number of free messages before requiring payment
-- **Telegram integration**: Native inline keyboard buttons for payment
-- **Base network support**: Both Base Mainnet and Base Sepolia (testnet)
-- **Instant settlement**: Payments settle in seconds via x402 facilitator
+## Quick Start
 
-## Installation
+### 1. Install Dependencies
 
-The plugin is included in the OpenClaw extensions directory. To enable it:
-
-1. Install dependencies in the plugin directory:
 ```bash
 cd extensions/x402-payment
-npm install
+pnpm install
 ```
 
-2. Configure the plugin in your OpenClaw config:
-```yaml
-plugins:
-  x402-payment:
-    enabled: true
-    network: "eip155:8453"  # Base Mainnet
-    payTo: "0xYourWalletAddress"
-    pricePerMessage: "$0.01"
-    freeMessagesPerSession: 3
+### 2. Configure Environment
+
+Required variables:
+```bash
+TELEGRAM_BOT_TOKEN=your_bot_token
+X402_PAY_TO=0xYourWalletAddress
+```
+
+### 3. Run Telegram Bot
+
+```bash
+TELEGRAM_BOT_TOKEN=xxx pnpm telegram
 ```
 
 ## Configuration
@@ -42,128 +46,119 @@ plugins:
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `X402_ENABLED` | Enable payments | `false` |
-| `X402_NETWORK` | CAIP-2 network ID | `eip155:84532` (Base Sepolia) |
-| `X402_PAY_TO` | Your receiving wallet address | Required |
-| `X402_PRICE_PER_MESSAGE` | Price per AI response | `$0.01` |
-| `X402_FACILITATOR_URL` | Facilitator for payment verification | Auto-selected |
-| `X402_FREE_MESSAGES` | Free messages before payment required | `3` |
-| `X402_PRIVATE_KEY` | Private key for testing (optional) | - |
-
-### Plugin Config
-
-```json
-{
-  "enabled": true,
-  "network": "eip155:8453",
-  "payTo": "0x...",
-  "pricePerMessage": "$0.01",
-  "freeMessagesPerSession": 3,
-  "telegramPaymentBotUrl": "https://openclaw.ai/pay"
-}
-```
+| `X402_NETWORK` | CAIP-2 network ID | `eip155:84532` |
+| `X402_PAY_TO` | Receiving wallet address | Required |
+| `X402_PRICE_PER_MESSAGE` | Price per response | `$0.01` |
+| `X402_FREE_MESSAGES` | Free messages per session | `3` |
+| `PERMIT2_SPENDER_ADDRESS` | Auto-payment contract | Optional |
 
 ### Networks
 
-| Network | CAIP-2 ID | Use Case |
-|---------|-----------|----------|
-| Base Mainnet | `eip155:8453` | Production |
-| Base Sepolia | `eip155:84532` | Testing |
+| Network | CAIP-2 ID | USDC Contract |
+|---------|-----------|---------------|
+| Base Mainnet | `eip155:8453` | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+| Base Sepolia | `eip155:84532` | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
 
 ## Usage
 
 ### Telegram Commands
 
-Users can interact with the payment system via these commands:
-
-- `/x402` or `/x402 help` - Show help information
-- `/x402 status` - Show payment status and remaining free messages
-- `/x402 pay` - Generate a payment link
-
-### CLI Commands
-
-```bash
-# Check configuration status
-openclaw x402 status
-
-# View session stats
-openclaw x402 session <sessionKey>
-
-# Clean up expired payments
-openclaw x402 cleanup
+```
+/x402 help     - Show help
+/x402 status   - Show payment status
+/x402 reset    - Reset session (testing)
+/x402 paid TX  - Verify payment transaction
 ```
 
-## How It Works
-
-1. User sends message to AI via Telegram
-2. Plugin checks if user has free messages remaining
-3. If payment required:
-   - Plugin blocks message
-   - Sends payment prompt with inline button
-   - User clicks button to open payment webapp
-   - User pays with crypto wallet (MetaMask, Coinbase Wallet, etc.)
-   - Payment verified via x402 facilitator
-   - Message unblocked and AI responds
-4. If free messages available:
-   - Message passes through to AI
-   - Counter incremented
-
-## Payment Flow
+### Payment Flow
 
 ```
-User Message → Check Free Messages → [Payment Required?]
-                                           │
-                    ┌──────────────────────┴──────────────────────┐
-                    │ No                                          │ Yes
-                    ▼                                             ▼
-              AI Response                                   Payment Prompt
-                                                                  │
-                                                                  ▼
-                                                           User Pays USDC
-                                                                  │
-                                                                  ▼
-                                                         Verify via x402
-                                                                  │
-                                                                  ▼
-                                                            AI Response
+Message → Free Messages Check → [Payment Required?]
+                                      │
+              ┌───────────────────────┴───────────────────────┐
+              │ No                                            │ Yes
+              ▼                                               ▼
+        AI Response                                    Payment Link
+                                                             │
+                                                             ▼
+                                                     User Sends USDC
+                                                             │
+                                                             ▼
+                                                  /x402 paid 0xTxHash
+                                                             │
+                                                             ▼
+                                                    On-chain Verify
+                                                             │
+                                                             ▼
+                                                       AI Response
+```
+
+### Permit2 Flow (Gasless)
+
+```
+1. User approves USDC to Permit2 (one-time transaction)
+2. User signs Permit2 allowance for Vessel (no gas)
+3. All future payments: automatic, no signatures needed
+```
+
+## Architecture
+
+```
+extensions/x402-payment/
+├── src/
+│   ├── x402-client.ts     # x402 protocol wrapper
+│   ├── payment-flow.ts    # Session/payment management
+│   ├── telegram-ui.ts     # Telegram payment messages
+│   ├── config.ts          # Configuration
+│   ├── hooks.ts           # OpenClaw hook registration
+│   ├── types.ts           # Type definitions
+│   └── permit2/           # Permit2 auto-payments
+│       ├── permit2-client.ts
+│       ├── approval-flow.ts
+│       ├── auto-payment.ts
+│       └── index.ts
+├── index.ts               # Plugin entry point
+├── test-telegram.ts       # Telegram bot test
+└── openclaw.plugin.json   # Plugin manifest
 ```
 
 ## Testing
 
-### Local Development
+### Unit Tests
 
-1. Use Base Sepolia testnet:
 ```bash
-export X402_NETWORK=eip155:84532
-export X402_PAY_TO=0xYourTestWallet
-export X402_ENABLED=true
+pnpm test
 ```
 
-2. Get testnet USDC from [Base Sepolia Faucet](https://www.alchemy.com/faucets/base-sepolia)
+### Live Integration Test
 
-3. Test the flow with a small amount
-
-### Production
-
-1. Switch to Base Mainnet:
 ```bash
-export X402_NETWORK=eip155:8453
+# Get Base Sepolia USDC from faucet.circle.com
+# Run Telegram bot
+TELEGRAM_BOT_TOKEN=xxx pnpm telegram
+
+# In Telegram:
+# 1. Send 3 messages (free tier)
+# 2. 4th message triggers payment
+# 3. Send USDC to payment address
+# 4. /x402 paid 0xYourTxHash
 ```
 
-2. Ensure your receiving wallet is ready for real USDC
+## Related: Vessel Platform
 
-## Security
+For LLM proxy, onboarding, UI, and infrastructure features, see the **Vessel** app at `apps/vessel/`.
 
-- Never commit private keys
-- Use environment variables for sensitive config
-- Test thoroughly on testnet before mainnet
-- Monitor payment callbacks for anomalies
+Vessel uses this plugin for payment processing and adds:
+- OpenRouter LLM proxy with usage tracking
+- OAuth-based LLM provider onboarding
+- Control UI for settings and dashboard
+- Phala Cloud + Hetzner deployment
 
 ## Resources
 
-- [x402 Protocol Documentation](https://x402.org)
-- [x402 GitHub](https://github.com/coinbase/x402)
+- [x402 Protocol](https://x402.org)
+- [Permit2 Documentation](https://docs.uniswap.org/contracts/permit2/overview)
 - [Base Network](https://base.org)
-- [USDC on Base](https://www.circle.com/usdc)
 
 ## License
 
